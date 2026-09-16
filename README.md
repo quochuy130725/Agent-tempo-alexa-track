@@ -14,43 +14,28 @@
 *   **Live Text Streaming:** Server-Sent Events (SSE) provide a natural, typing-like response experience.
 
 ## 🏗️ System Architecture
-AgentTempo utilizes a decoupled full-stack architecture.
+AgentTempo utilizes a decoupled full-stack architecture:
 
-```mermaid
-graph TD
-    classDef frontend fill:#02569B,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef backend fill:#43853D,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef ai fill:#232F3E,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef db fill:#3ECF8E,stroke:#fff,stroke-width:2px,color:#000;
+*   📱 **Frontend (Flutter):** Manages the UI, Chat interface, and state (`Provider`). Listens to database events via WebSockets.
+*   ⚙️ **Backend (Node.js + Express):** Acts as the MCP Server. Handles AI Tool Calling, communicates with the LLM, and streams text responses.
+*   🧠 **AI Engine (AWS Bedrock):** Runs `Claude 3.5 Sonnet` for natural language reasoning and JSON tool payload generation.
+*   🗄️ **Database & Realtime (Supabase):** PostgreSQL handles data storage, while Supabase Realtime pushes live updates to the frontend.
 
-    subgraph Client Layer [1. Frontend - Flutter Mobile App]
-        UI[Chat Interface & Action Cards]
-        State[Provider State Management]
-        UI <--> State
-    end
+## 🔄 Data Flow (Human-in-the-Loop)
+Our core automated workflow strictly requires human approval before modifying the calendar:
 
-    subgraph Logic Layer [2. Backend - Node.js + Express MCP]
-        API[HTTP REST API Endpoints]
-        SSE[Server-Sent Events Streamer]
-        Tools[Tool Calling Definitions / Zod]
-        API <--> Tools
-        API <--> SSE
-    end
+1.  👤 **User Request:** The user types a command (e.g., "Reschedule my afternoon meeting") in the Flutter app.
+2.  🧠 **AI Reasoning:** The Node.js backend sends the context to AWS Bedrock. Claude 3.5 decides to call a tool and returns a JSON payload (`proposeSchedule`).
+3.  ⏸️ **Staging Action:** The backend intercepts this JSON and saves it to the Supabase `action_cards` table with a `pending` status.
+4.  ⚡ **Realtime Trigger:** Supabase instantly pushes a WebSocket signal to Flutter, popping up an "Action Card" on the screen.
+5.  ✅ **Human Approval:** 
+    *   If **Approved**, the backend updates the actual calendar and resolves the card.
+    *   If **Rejected**, the backend cancels the update and asks the AI for a new solution.
 
-    subgraph Data & AI Layer [3. Infrastructure]
-        LLM[AWS Bedrock - Claude 3.5]
-        DB[(Supabase PostgreSQL)]
-        RT((Supabase Realtime WebSockets))
-    end
+## 🚀 Local Setup
 
-    UI -- "1. HTTP POST Request" --> API
-    SSE -- "2. Stream Text Responses" --> UI
-    Tools <== "3. Context & JSON Payloads" ==> LLM
-    API -- "4. Insert pending Action Card" --> DB
-    DB -. "Trigger Event" .-> RT
-    RT -- "5. Push WebSocket Signal" --> State
-    
-    class UI,State frontend;
-    class API,SSE,Tools backend;
-    class LLM ai;
-    class DB,RT db;
+**1. Clone the repository:**
+```bash
+cd OJT2026
+git clone [https://github.com/your-username/agent-tempo.git](https://github.com/your-username/agent-tempo.git)
+cd agent-tempo
