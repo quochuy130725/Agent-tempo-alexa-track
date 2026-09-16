@@ -51,11 +51,13 @@ graph TD
     RT -- "5. Push WebSocket Signal" --> State
     
     class UI,State frontend;
+    class API,SSE,Tools backend;
+    class LLM ai;
+    class DB,RT db;
 
 
-    Data Flow (Human-in-the-Loop)
-Đoạn mã
-sequenceDiagram
+
+    sequenceDiagram
     autonumber
     actor User
     participant Flutter as Flutter App
@@ -83,12 +85,14 @@ sequenceDiagram
         Flutter->>Node: HTTP POST /api/action/reject
         Node->>Supabase: Hủy cập nhật
     end
-🚀 Local Setup
+
+
+    🚀 Local Setup
 1. Clone the repository into your workspace:
 
 Bash
 cd OJT2026
-git clone [https://github.com/your-username/agent-tempo.git](https://github.com/your-username/agent-tempo.git)
+git clone https://github.com/your-username/agent-tempo.git
 cd agent-tempo
 2. Backend Setup:
 
@@ -104,6 +108,3 @@ cd frontend
 flutter pub get
 # Ensure you create a .env file with Supabase Publishable Key
 flutter run
-    class API,SSE,Tools backend;
-    class LLM ai;
-    class DB,RT db;
