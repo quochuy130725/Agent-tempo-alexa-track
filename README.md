@@ -14,32 +14,96 @@
 *   **Live Text Streaming:** Server-Sent Events (SSE) provide a natural, typing-like response experience.
 
 ## 🏗️ System Architecture
-AgentTempo utilizes a decoupled full-stack architecture:
-1.  **Frontend:** Flutter (Mobile) with Provider for state management.
-2.  **Backend:** Node.js + TypeScript (Express) acting as the orchestration layer.
-3.  **Database & Realtime:** Supabase (PostgreSQL) handling Auth, storage, and WebSockets.
-4.  **AI Engine:** AWS Bedrock serving Claude 3.5 Sonnet.
+AgentTempo utilizes a decoupled full-stack architecture.
 
-## 🚀 Local Setup
+```mermaid
+graph TD
+    classDef frontend fill:#02569B,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef backend fill:#43853D,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef ai fill:#232F3E,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef db fill:#3ECF8E,stroke:#fff,stroke-width:2px,color:#000;
 
-**1. Clone the repository into your workspace:**
-```bash
+    subgraph Client Layer [1. Frontend - Flutter Mobile App]
+        UI[Chat Interface & Action Cards]
+        State[Provider State Management]
+        UI <--> State
+    end
+
+    subgraph Logic Layer [2. Backend - Node.js + Express MCP]
+        API[HTTP REST API Endpoints]
+        SSE[Server-Sent Events Streamer]
+        Tools[Tool Calling Definitions / Zod]
+        API <--> Tools
+        API <--> SSE
+    end
+
+    subgraph Data & AI Layer [3. Infrastructure]
+        LLM[AWS Bedrock - Claude 3.5]
+        DB[(Supabase PostgreSQL)]
+        RT((Supabase Realtime WebSockets))
+    end
+
+    UI -- "1. HTTP POST Request" --> API
+    SSE -- "2. Stream Text Responses" --> UI
+    Tools <== "3. Context & JSON Payloads" ==> LLM
+    API -- "4. Insert pending Action Card" --> DB
+    DB -. "Trigger Event" .-> RT
+    RT -- "5. Push WebSocket Signal" --> State
+    
+    class UI,State frontend;
+
+
+    Data Flow (Human-in-the-Loop)
+Đoạn mã
+sequenceDiagram
+    autonumber
+    actor User
+    participant Flutter as Flutter App
+    participant Node as Node.js Server
+    participant Bedrock as AWS Bedrock
+    participant Supabase as Supabase
+
+    User->>Flutter: Nhập yêu cầu (VD: Dời lịch)
+    Flutter->>Node: HTTP POST /api/chat
+    
+    Node->>Bedrock: Truyền Context + Tools
+    Bedrock-->>Node: Trả về JSON Tool (proposeSchedule)
+    
+    Node->>Supabase: INSERT action_cards (status: 'pending')
+    
+    Supabase-->>Flutter: Bắn sự kiện qua WebSocket
+    Flutter->>User: Hiển thị Action Card (Approve/Reject)
+    
+    alt User Approve
+        User->>Flutter: Bấm Approve
+        Flutter->>Node: HTTP POST /api/action/approve
+        Node->>Supabase: Cập nhật lịch & trạng thái
+    else User Reject
+        User->>Flutter: Bấm Reject
+        Flutter->>Node: HTTP POST /api/action/reject
+        Node->>Supabase: Hủy cập nhật
+    end
+🚀 Local Setup
+1. Clone the repository into your workspace:
+
+Bash
 cd OJT2026
 git clone [https://github.com/your-username/agent-tempo.git](https://github.com/your-username/agent-tempo.git)
 cd agent-tempo
-
-
 2. Backend Setup:
 
 Bash
 cd backend
 npm install
-# Add your .env file with Supabase and AWS credentials
+# Ensure you create a .env file with Supabase and AWS credentials
 npm run dev
 3. Frontend Setup:
 
 Bash
-cd ../frontend
+cd frontend
 flutter pub get
-# Add your .env file with Supabase Publishable Key
+# Ensure you create a .env file with Supabase Publishable Key
 flutter run
+    class API,SSE,Tools backend;
+    class LLM ai;
+    class DB,RT db;
