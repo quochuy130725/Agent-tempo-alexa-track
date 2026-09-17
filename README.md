@@ -14,43 +14,30 @@
 *   **Live Text Streaming:** Server-Sent Events (SSE) provide a natural, typing-like response experience.
 
 ## 🏗️ System Architecture
-AgentTempo utilizes a decoupled full-stack architecture.
 
-```mermaid
-graph TD
-    classDef frontend fill:#02569B,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef backend fill:#43853D,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef ai fill:#232F3E,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef db fill:#3ECF8E,stroke:#fff,stroke-width:2px,color:#000;
+📱 **Frontend (Flutter)** ──(HTTP/SSE/WebSocket)──> ⚙️ **Backend (Node.js/Express)** ──(API)──> 🗄️ **Supabase & AWS Bedrock**
 
-    subgraph Client Layer [1. Frontend - Flutter Mobile App]
-        UI[Chat Interface & Action Cards]
-        State[Provider State Management]
-        UI <--> State
-    end
+*   **Client Layer:** Manages the UI, Chat interface, and state (`Provider`). Listens to database events via WebSockets.
+*   **Logic Layer (MCP Server):** Handles AI Tool Calling, communicates with the LLM, and streams text responses.
+*   **Data & AI Layer:** PostgreSQL handles data storage, Supabase Realtime pushes live updates, and AWS Bedrock runs `Claude 3.5 Sonnet` for reasoning.
 
-    subgraph Logic Layer [2. Backend - Node.js + Express MCP]
-        API[HTTP REST API Endpoints]
-        SSE[Server-Sent Events Streamer]
-        Tools[Tool Calling Definitions / Zod]
-        API <--> Tools
-        API <--> SSE
-    end
-
-    subgraph Data & AI Layer [3. Infrastructure]
-        LLM[AWS Bedrock - Claude 3.5]
-        DB[(Supabase PostgreSQL)]
-        RT((Supabase Realtime WebSockets))
-    end
-
-    UI -- "1. HTTP POST Request" --> API
-    SSE -- "2. Stream Text Responses" --> UI
-    Tools <== "3. Context & JSON Payloads" ==> LLM
-    API -- "4. Insert pending Action Card" --> DB
-    DB -. "Trigger Event" .-> RT
-    RT -- "5. Push WebSocket Signal" --> State
-    
-    class UI,State frontend;
-    class API,SSE,Tools backend;
-    class LLM ai;
-    class DB,RT db;
+## 📂 Enterprise Codebase Structure (DDD Pattern)
+```text
+AgentTempo/
+├── backend/                  # Node.js + TypeScript
+│   ├── src/
+│   │   ├── config/           # Environment, Supabase, AWS clients
+│   │   ├── controllers/      # Route logic & HTTP response handling
+│   │   ├── services/         # Core business logic (AI, Calendar)
+│   │   ├── routes/           # Express API endpoints
+│   │   ├── tools/            # MCP Agentic Tools & Zod schemas
+│   │   └── utils/            # Shared utilities (logger, helpers)
+│   └── package.json
+│
+└── frontend/                 # Flutter Mobile App
+    ├── lib/
+    │   ├── providers/        # State management (WebSocket listeners)
+    │   ├── services/         # API & SSE clients
+    │   ├── screens/          # Main UI views
+    │   └── widgets/          # Reusable components (Action Cards)
+    └── pubspec.yaml
