@@ -41,3 +41,38 @@ AgentTempo/
     │   ├── screens/          # Main UI views
     │   └── widgets/          # Reusable components (Action Cards)
     └── pubspec.yaml
+
+
+ 🔄 Data Flow (Human-in-the-Loop)
+Our core automated workflow strictly requires human approval before modifying the calendar:
+
+[User] ──(1) Chat Command──> [Flutter UI] ──(2) HTTP POST──> [Node.js Server]
+[Node.js Server] ──(3) Context & Tools──> [AWS Bedrock (Claude 3.5)]
+[AWS Bedrock] ──(4) JSON Tool Payload──> [Node.js Server]
+[Node.js Server] ──(5) INSERT pending record──> [Supabase Database]
+[Supabase Database] ──(6) WebSocket Trigger──> [Flutter UI]
+[Flutter UI] ──(7) Popup Action Card──> [User Approval]
+
+If Approved: Backend updates the actual calendar and resolves the card.
+
+If Rejected: Backend cancels the update and asks the AI for a new solution.
+
+
+🚀 Local Setup
+1. Clone the repository:
+
+Bash
+git clone [https://github.com/your-username/agent-tempo.git](https://github.com/your-username/agent-tempo.git)
+cd agent-tempo
+2. Backend Setup:
+
+Bash
+cd backend
+npm install
+npm run dev
+3. Frontend Setup:
+
+Bash
+cd frontend
+flutter pub get
+flutter run
